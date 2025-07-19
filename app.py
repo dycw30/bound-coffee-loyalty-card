@@ -17,7 +17,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# ---------------- Authentication ----------------
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):

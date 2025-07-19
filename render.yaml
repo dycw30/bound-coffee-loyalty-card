@@ -1,2 +1,6 @@
-buildCommand: pip install -r requirements.txt
-startCommand: gunicorn app:app
+services:
+  - type: web
+    name: coffee-loyalty
+    env: python
+    buildCommand: ''
+    startCommand: 'gunicorn app:app'
