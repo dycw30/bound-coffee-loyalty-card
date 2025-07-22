@@ -1,6 +1,7 @@
+
 services:
   - type: web
-    name: coffee-loyalty
+    name: bound-coffee-loyalty-card
     env: python
-    buildCommand: ''
-    startCommand: 'gunicorn app:app'
+    buildCommand: ""
+    startCommand: gunicorn app:app
