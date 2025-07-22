@@ -168,10 +168,10 @@ def order():
     conn.close()
     return render_template('order.html', drinks=drinks)
 
-@app.route('/get_customers_by_uid', methods=['POST'])
+@app.route('/get_customers_by_uid')
 @login_required
 def get_customers_by_uid():
-    uid = request.json.get('uid')
+    uid = request.args.get('uid')
     conn = get_db_connection()
     customers = conn.execute('SELECT * FROM customers WHERE unique_id = ?', (uid,)).fetchall()
     conn.close()
@@ -198,9 +198,10 @@ def get_customer_summary(customer_id):
 @login_required
 def submit_order():
     customer_id = request.form['customer_id']
-    drink = request.form['drink']
+    drink = request.form['drink_name']  # ← Correct indentation here
     quantity = int(request.form['quantity'])
     redeem = request.form.get('redeem') == 'on'
+
 
     conn = get_db_connection()
     customer = conn.execute('SELECT * FROM customers WHERE id = ?', (customer_id,)).fetchone()
