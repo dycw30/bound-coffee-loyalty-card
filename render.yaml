@@ -1,7 +1,6 @@
-
 services:
   - type: web
     name: bound-coffee-loyalty-card
     env: python
-    buildCommand: ""
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app

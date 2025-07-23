@@ -1,78 +1,89 @@
-<!-- templates/order.html -->
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Order Panel</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <title>Order Panel - Bound Coffee Loyalty</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h2>Place Order</h2>
-    <p>Welcome, {{ session.username }}</p>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <div class="card">
+      <h2>Order Panel</h2>
+      <p>Welcome, {{ session.username }}</p>
+      <a href="{{ url_for('logout') }}">Logout</a>
 
-    <form id="lookup-form">
-      <input type="text" id="uid" placeholder="Enter 4-digit UID" required>
-      <button type="submit">Lookup</button>
-    </form>
+      <form id="lookup-form">
+        <input type="text" id="uid" placeholder="Enter 4-digit UID" maxlength="4" required>
+        <button type="submit">Lookup</button>
+      </form>
 
-    <form id="order-form" method="POST" action="{{ url_for('submit_order') }}" style="display:none;">
-      <select name="customer_id" id="customer-select" required></select>
+      <form id="order-form" method="POST" action="{{ url_for('submit_order') }}" style="display:none;">
+        <select name="customer_id" id="customer-select" required></select>
 
-      <select name="drink_name" required>
-        {% for drink in drinks %}
-          <option value="{{ drink['name'] }}">{{ drink['name'] }}</option>
-        {% endfor %}
-      </select>
+        <select name="drink_name" required>
+          {% for drink in drinks %}
+            <option value="{{ drink['name'] }}">{{ drink['name'] }}</option>
+          {% endfor %}
+        </select>
 
-      <input type="number" name="quantity" placeholder="Quantity" required min="1">
-      <label><input type="checkbox" name="redeem"> Redeem Tokens</label>
-      <button type="submit">Submit</button>
-    </form>
+        <input type="number" name="quantity" placeholder="Quantity" required min="1">
+        <label><input type="checkbox" name="redeem"> Redeem Tokens</label>
+        <button type="submit">Submit</button>
+      </form>
 
-    <div id="customer-summary" style="display:none;">
-      <h3>Customer Summary</h3>
-      <p id="summary-content"></p>
+      <div id="customer-summary" style="display:none;">
+        <h3>Customer Summary</h3>
+        <p id="summary-content">Loading...</p>
+      </div>
     </div>
   </div>
 
   <script>
-    $('#lookup-form').submit(function(e) {
-      e.preventDefault();
-      const uid = $('#uid').val();
-      $.get(`/get_customers_by_uid?uid=${uid}`, function(data) {
-        if (data.length > 0) {
-          $('#customer-select').empty();
-          data.forEach(c => {
-            $('#customer-select').append(`<option value="${c.id}">${c.name}</option>`);
-          });
-          $('#order-form').show();
-          loadSummary(data[0].id);
-        } else {
-          alert("No customers found.");
+    $(document).ready(function () {
+      $('#lookup-form').submit(function (e) {
+        e.preventDefault();
+        const uid = $('#uid').val();
+        if (!uid.match(/^\d{4}$/)) {
+          alert("Please enter a 4-digit UID.");
+          return;
         }
+
+        $.get(`/get_customers_by_uid?uid=${uid}`, function (data) {
+          if (data.length > 0) {
+            $('#customer-select').empty();
+            data.forEach(c => {
+              $('#customer-select').append(`<option value="${c.id}">${c.name}</option>`);
+            });
+            $('#order-form').show();
+            loadSummary(data[0].id);
+          } else {
+            $('#order-form').hide();
+            $('#customer-summary').hide();
+            alert("No customers found.");
+          }
+        });
       });
-    });
 
-    $('#customer-select').change(function() {
-      const id = $(this).val();
-      loadSummary(id);
-    });
+      $('#customer-select').change(function () {
+        const id = $(this).val();
+        loadSummary(id);
+      });
 
-    function loadSummary(customerId) {
-      $.get(`/get_customer_summary/${customerId}`, function(summary) {
-        const html = `
-          Name: ${summary.name}<br>
-          Total Orders: ${summary.total_orders}<br>
-          Tokens Earned: ${summary.tokens_earned}<br>
-          Tokens Redeemed: ${summary.tokens_redeemed}<br>
-          Token Balance: ${summary.token_balance}
-        `;
-        $('#summary-content').html(html);
+      function loadSummary(customerId) {
         $('#customer-summary').show();
-      });
-    }
+        $('#summary-content').html('Loading...');
+        $.get(`/get_customer_summary/${customerId}`, function (summary) {
+          const html = `
+            <strong>Name:</strong> ${summary.name}<br>
+            <strong>Total Orders:</strong> ${summary.total_orders}<br>
+            <strong>Tokens Earned:</strong> ${summary.tokens_earned}<br>
+            <strong>Tokens Redeemed:</strong> ${summary.tokens_redeemed}<br>
+            <strong>Token Balance:</strong> ${summary.token_balance}
+          `;
+          $('#summary-content').html(html);
+        });
+      }
+    });
   </script>
 </body>
 </html>
