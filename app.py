@@ -281,7 +281,9 @@ def submit_order():
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM customers WHERE id = %s", (customer_id,))
+
+    # Fetch current customer data
+    cur.execute("SELECT total_orders, tokens_earned, tokens_redeemed FROM customers WHERE id = %s", (customer_id,))
     customer = cur.fetchone()
 
     if not customer:
@@ -290,21 +292,35 @@ def submit_order():
         return "Customer not found", 404
 
     if redeem:
-        balance = customer['tokens_earned'] - customer['tokens_redeemed']
-        if balance >= quantity:
-            cur.execute("UPDATE customers SET tokens_redeemed = tokens_redeemed + %s WHERE id = %s", (quantity, customer_id))
+        current_balance = customer['tokens_earned'] - customer['tokens_redeemed']
+        if current_balance >= quantity:
+            cur.execute(
+                "UPDATE customers SET tokens_redeemed = tokens_redeemed + %s WHERE id = %s",
+                (quantity, customer_id)
+            )
         else:
             cur.close()
             conn.close()
-            return "Not enough tokens", 400
+            return "Not enough tokens to redeem", 400
     else:
-        earned = quantity // 9
+        # Calculate token reward based on new orders
+        previous_total_orders = customer['total_orders']
+        new_total_orders = previous_total_orders + quantity
+        previous_tokens = customer['tokens_earned']
+
+        # Tokens are earned for every 9 drinks
+        total_earned_tokens = new_total_orders // 9
+        newly_earned_tokens = total_earned_tokens - previous_tokens
+
+        # Ensure at least 0
+        newly_earned_tokens = max(0, newly_earned_tokens)
+
         cur.execute("""
             UPDATE customers
-            SET total_orders = total_orders + %s,
+            SET total_orders = %s,
                 tokens_earned = tokens_earned + %s
             WHERE id = %s
-        """, (quantity, earned, customer_id))
+        """, (new_total_orders, newly_earned_tokens, customer_id))
 
     conn.commit()
     cur.close()
